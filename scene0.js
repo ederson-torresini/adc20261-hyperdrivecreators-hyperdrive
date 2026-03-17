@@ -2,149 +2,139 @@ class scene0 extends Phaser.Scene {
   constructor() {
     super("scene0");
 
-    this.player;
-    this.stars;
-    this.bombs;
-    this.platforms;
-    this.cursors;
-    this.score = 0;
-    this.gameOver = false;
-    this.scoreText;
+    this.threshold = 0.1;
+    this.speed = 200;
+    this.direction = undefined;
+    this.money = 0;
+    this.timer = 120;
   }
 
   preload() {
-    this.load.image("sky", "assets/sky.png");
-    this.load.image("ground", "assets/platform.png");
-    this.load.image("star", "assets/star.png");
-    this.load.image("bomb", "assets/bomb.png");
-    this.load.spritesheet("dude", "assets/dude.png", {
-      frameWidth: 32,
-      frameHeight: 48,
+    this.load.spritesheet("corre", "assets/corre-spritesheet.png", {
+      frameWidth: 64,
+      frameHeight: 64,
     });
+    this.load.spritesheet("buttons", "assets/buttons.png", {
+      frameWidth: 32,
+      frameHeight: 32,
+    })
+    this.load.plugin(
+      "rexvirtualjoystickplugin",
+      "rexvirtualjoystickplugin.min.js",
+      true,
+    );
+    this.load.audio("dinheiro", "assets/dinheiro.mp3");
   }
 
   create() {
-    this.add.image(400, 300, "sky");
-    this.platforms = this.physics.add.staticGroup();
-    this.platforms.create(400, 568, "ground").setScale(2).refreshBody();
-    this.platforms.create(600, 400, "ground");
-    this.platforms.create(50, 250, "ground");
-    this.platforms.create(750, 220, "ground");
-    this.player = this.physics.add.sprite(100, 450, "dude");
-    this.player.setBounce(0.2);
-    this.player.setCollideWorldBounds(true);
+    this.dinheiro = this.sound.add
+      ("dinheiro");
 
-    this.anims.create({
-      key: "left",
-      frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 3 }),
+      this.anims.create({
+      key: "walk-up",
+      frames: this.anims.generateFrameNumbers("corre", { start: 0, end: 7 }),
       frameRate: 10,
       repeat: -1,
     });
 
     this.anims.create({
-      key: "turn",
-      frames: [{ key: "dude", frame: 4 }],
-      frameRate: 20,
-    });
-
-    this.anims.create({
-      key: "right",
-      frames: this.anims.generateFrameNumbers("dude", { start: 5, end: 8 }),
+      key: "walk-left",
+      frames: this.anims.generateFrameNumbers("corre", { start: 8, end: 15 }),
       frameRate: 10,
       repeat: -1,
     });
 
-    this.cursors = this.input.keyboard.createCursorKeys();
-
-    this.stars = this.physics.add.group({
-      key: "star",
-      repeat: 11,
-      setXY: { x: 12, y: 0, stepX: 70 },
+    this.anims.create({
+      key: "walk-right",
+      frames: this.anims.generateFrameNumbers("corre", { start: 24, end: 31 }),
+      frameRate: 10,
+      repeat: -1,
     });
 
-    this.stars.children.iterate(function (child) {
-      child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+    this.anims.create({
+      key: "walk-down",
+      frames: this.anims.generateFrameNumbers("corre", { start: 16, end: 23 }),
+      frameRate: 10,
+      repeat: -1,
     });
 
-    this.bombs = this.physics.add.group();
+    this.corre = this.physics.add.sprite(400, 225, "corre", 20);
 
-    this.scoreText = this.add.text(16, 16, "score: 0", {
+    this.joystick = this.plugins.get("rexvirtualjoystickplugin").add(this, {
+      x: 100,
+      y: 350,
+      radius: 50,
+      base: this.add.circle(0, 0, 50, 0xcccccc),
+      thumb: this.add.circle(0, 0, 25, 0x666666),
+    });
+
+    this.joystick.on("update", () => {
+      const angle = Phaser.Math.DegToRad(this.joystick.angle);
+      const force = this.joystick.force;
+
+      if (force > this.threshold) {
+        this.direction = new Phaser.Math.Vector2(
+          Math.cos(angle),
+          Math.sin(angle),
+        ).normalize();
+      }
+
+      if (this.joystick.force > 0) {
+        this.corre.setVelocity(
+          this.direction.x * this.speed,
+          this.direction.y * this.speed
+        );
+
+        switch (true) {
+          case this.joystick.angle >= -135 && this.joystick.angle < -45:
+            this.corre.anims.play("walk-up", true);
+            break;
+          case this.joystick.angle >= -45 && this.joystick.angle < 45:
+            this.corre.anims.play("walk-right", true);
+            break;
+          case this.joystick.angle >= 45 && this.joystick.angle < 135:
+            this.corre.anims.play("walk-down", true);
+            break;
+          case this.joystick.angle >= 135 || this.joystick.angle < -135:
+            this.corre.anims.play("walk-left", true);
+            break;
+        }
+      } else {
+        this.corre.setVelocity(0, 0);
+        this.corre.anims.stop();
+      }
+    });
+    this.buttons = this.add.sprite(700, 350, "buttons", 10)
+      .setScale(2)
+      .setInteractive()
+      .on("pointerdown", () => {
+        this.buttons.setFrame(11);
+      })
+    .on("pointerup", () => {
+      this.buttons.setFrame(10);
+      this.money += 10;
+      this.textMoney.setText(`Money: ${this.money}`);
+      this.dinheiro.play();
+    });
+
+    this.textMoney = this.add.text(16, 16, `money: ${this.money}`, {
       fontSize: "32px",
-      fill: "#000",
+      fill: "#fff",
+    }); 
+
+    this.textTime = this.add.text(16, 50, `Time: ${this.timer}`, {
+      fontSize: "32px",
+      fill: "#fff",
     });
+    setInterval(() => {
+      this.timer -= 1;
+      this.textTime.setText(`Time: ${this.timer}`);
 
-    this.physics.add.collider(this.player, this.platforms);
-    this.physics.add.collider(this.stars, this.platforms);
-    this.physics.add.collider(this.bombs, this.platforms);
-    this.physics.add.overlap(
-      this.player,
-      this.stars,
-      this.collectStar,
-      null,
-      this,
-    );
-    this.physics.add.collider(
-      this.player,
-      this.bombs,
-      this.hitBomb,
-      null,
-      this,
-    );
-  }
-
-  update() {
-    if (this.gameOver) {
-      return;
-    }
-
-    if (this.cursors.left.isDown) {
-      this.player.setVelocityX(-160);
-
-      this.player.anims.play("left", true);
-    } else if (this.cursors.right.isDown) {
-      this.player.setVelocityX(160);
-
-      this.player.anims.play("right", true);
-    } else {
-      this.player.setVelocityX(0);
-
-      this.player.anims.play("turn");
-    }
-
-    if (this.cursors.up.isDown && this.player.body.touching.down) {
-      this.player.setVelocityY(-330);
-    }
-  }
-
-  collectStar(player, star) {
-    star.disableBody(true, true);
-
-    this.score += 10;
-    this.scoreText.setText("Score: " + this.score);
-
-    if (this.stars.countActive(true) === 0) {
-      this.stars.children.iterate(function (child) {
-        child.enableBody(true, child.x, 0, true, true);
-      });
-
-      var x =
-        this.player.x < 400
-          ? Phaser.Math.Between(400, 800)
-          : Phaser.Math.Between(0, 400);
-
-      var bomb = this.bombs.create(x, 16, "bomb");
-      bomb.setBounce(1);
-      bomb.setCollideWorldBounds(true);
-      bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-      bomb.allowGravity = false;
-    }
-  }
-
-  hitBomb(player, bomb) {
-    this.physics.pause();
-    this.player.setTint(0xff0000);
-    this.player.anims.play("turn");
-    this.gameOver = true;
+      if (this.timer <= 0) {
+        this.scene0.stop();
+        this.scene.start("gameover");
+      }
+    }, 1000);
   }
 }
 
