@@ -3,21 +3,20 @@ class scene0 extends Phaser.Scene {
     super("scene0");
 
     this.threshold = 0.1;
-    this.speed = 200;
+    this.speed = 400;
     this.direction = undefined;
     this.money = 0;
-    this.timer = 120;
+    this.timer = 0;
   }
 
   preload() {
-    this.load.spritesheet("corre", "assets/corre-spritesheet.png", {
+    this.load.image("mapa", "assets/mapahyperdrive.png");
+
+    this.load.spritesheet("nave", "assets/nave.png", {
       frameWidth: 64,
       frameHeight: 64,
     });
-    this.load.spritesheet("buttons", "assets/buttons.png", {
-      frameWidth: 32,
-      frameHeight: 32,
-    })
+    
     this.load.plugin(
       "rexvirtualjoystickplugin",
       "rexvirtualjoystickplugin.min.js",
@@ -27,38 +26,49 @@ class scene0 extends Phaser.Scene {
   }
 
   create() {
-    this.dinheiro = this.sound.add
-      ("dinheiro");
+    const worldWidth = 3200;
+    const worldHeight = 1925;
+    this.add
+      .tileSprite(0, 0, worldWidth, worldHeight, "mapa")
+      .setOrigin(0)
+      .setDepth(-1);
 
-      this.anims.create({
+    this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+    this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+
+    this.dinheiro = this.sound.add("dinheiro");
+
+    this.anims.create({
       key: "walk-up",
-      frames: this.anims.generateFrameNumbers("corre", { start: 0, end: 7 }),
+      frames: this.anims.generateFrameNumbers("nave", { start: 0, end:3 }),
       frameRate: 10,
       repeat: -1,
     });
 
     this.anims.create({
       key: "walk-left",
-      frames: this.anims.generateFrameNumbers("corre", { start: 8, end: 15 }),
+      frames: this.anims.generateFrameNumbers("nave", { start: 4, end: 7 }),
       frameRate: 10,
       repeat: -1,
     });
 
     this.anims.create({
       key: "walk-right",
-      frames: this.anims.generateFrameNumbers("corre", { start: 24, end: 31 }),
+      frames: this.anims.generateFrameNumbers("nave", { start: 12, end: 15 }),
       frameRate: 10,
       repeat: -1,
     });
 
     this.anims.create({
       key: "walk-down",
-      frames: this.anims.generateFrameNumbers("corre", { start: 16, end: 23 }),
+      frames: this.anims.generateFrameNumbers("nave", { start: 8, end: 11 }),
       frameRate: 10,
       repeat: -1,
     });
 
-    this.corre = this.physics.add.sprite(400, 225, "corre", 20);
+    this.nave = this.physics.add.sprite(400, 225, "nave", 20);
+    this.nave.setCollideWorldBounds(true);
+    this.cameras.main.startFollow(this.nave, true, 0.1, 0.1);
 
     this.joystick = this.plugins.get("rexvirtualjoystickplugin").add(this, {
       x: 100,
@@ -80,60 +90,41 @@ class scene0 extends Phaser.Scene {
       }
 
       if (this.joystick.force > 0) {
-        this.corre.setVelocity(
+        this.nave.setVelocity(
           this.direction.x * this.speed,
-          this.direction.y * this.speed
+          this.direction.y * this.speed,
         );
 
         switch (true) {
           case this.joystick.angle >= -135 && this.joystick.angle < -45:
-            this.corre.anims.play("walk-up", true);
+            this.nave.anims.play("walk-up", true);
             break;
           case this.joystick.angle >= -45 && this.joystick.angle < 45:
-            this.corre.anims.play("walk-right", true);
+            this.nave.anims.play("walk-right", true);
             break;
           case this.joystick.angle >= 45 && this.joystick.angle < 135:
-            this.corre.anims.play("walk-down", true);
+            this.nave.anims.play("walk-down", true);
             break;
           case this.joystick.angle >= 135 || this.joystick.angle < -135:
-            this.corre.anims.play("walk-left", true);
+            this.nave.anims.play("walk-left", true);
             break;
         }
       } else {
-        this.corre.setVelocity(0, 0);
-        this.corre.anims.stop();
+        this.nave.setVelocity(0, 0);
+        this.nave.anims.stop();
       }
     });
-    this.buttons = this.add.sprite(700, 350, "buttons", 10)
-      .setScale(2)
-      .setInteractive()
-      .on("pointerdown", () => {
-        this.buttons.setFrame(11);
+    
+    this.textTime = this.add
+      .text(16, 16, `Time: ${this.timer}`, {
+        fontSize: "32px",
+        fill: "#fff",
       })
-    .on("pointerup", () => {
-      this.buttons.setFrame(10);
-      this.money += 10;
-      this.textMoney.setText(`Money: ${this.money}`);
-      this.dinheiro.play();
-    });
-
-    this.textMoney = this.add.text(16, 16, `money: ${this.money}`, {
-      fontSize: "32px",
-      fill: "#fff",
-    }); 
-
-    this.textTime = this.add.text(16, 50, `Time: ${this.timer}`, {
-      fontSize: "32px",
-      fill: "#fff",
-    });
+      .setScrollFactor(0);
     setInterval(() => {
-      this.timer -= 1;
+      this.timer += 1;
       this.textTime.setText(`Time: ${this.timer}`);
-
-      if (this.timer <= 0) {
-        this.scene0.stop();
-        this.scene.start("gameover");
-      }
+      
     }, 1000);
   }
 }
