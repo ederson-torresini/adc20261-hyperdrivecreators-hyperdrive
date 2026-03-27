@@ -17,31 +17,34 @@ class scene0 extends Phaser.Scene {
       frameHeight: 64,
     });
 
+
     this.load.spritesheet("policia", "assets/nave.inimiga.png", {
       frameWidth: 64,
       frameHeight: 64,
     });
+
+    this.load.image("asteroid", "assets/Asteroid.png");
 
     this.load.plugin(
       "rexvirtualjoystickplugin",
       "rexvirtualjoystickplugin.min.js",
       true,
     );
-    this.load.audio("dinheiro", "assets/dinheiro.mp3");
   }
 
   create() {
-    const worldWidth = 3200;
-    const worldHeight = 1925;
+    this.timer = 0; // Zerar o timer no início da cena
+
+    this.worldWidth = 3200;
+    this.worldHeight = 1925;
+
     this.add
-      .tileSprite(0, 0, worldWidth, worldHeight, "mapa")
+      .tileSprite(0, 0, this.worldWidth, this.worldHeight, "mapa")
       .setOrigin(0)
       .setDepth(-1);
 
-    this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
-    this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
-
-    this.dinheiro = this.sound.add("dinheiro");
+    this.physics.world.setBounds(0, 0, this.worldWidth, this.worldHeight);
+    this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight);
 
     this.anims.create({
       key: "walk-up",
@@ -118,10 +121,33 @@ class scene0 extends Phaser.Scene {
     this.inimigo.body.setSize(32, 32); // Diminuir área de colisão
     this.inimigo.body.setOffset(16, 16); // Centralizar o body
 
+    // Asteroides
+    this.asteroides = this.physics.add.group();
+    for (let i = 0; i < 100; i++) {
+      const x = Phaser.Math.Between(100, this.worldWidth - 100);
+      const y = Phaser.Math.Between(100, this.worldHeight - 100);
+      const asteroid = this.asteroides.create(x, y, "asteroid");
+      console.log(x, y)
+    }
+    this.physics.add.collider(this.nave, this.asteroides, () => {
+      // Colisão com asteroides: parar a nave
+      this.nave.setVelocity(0, 0);
+    });
+
     // Adicionar colisão entre nave e inimigo
     this.physics.add.collider(
       this.nave,
       this.inimigo,
+      this.onCollision,
+      null,
+      this,
+    );
+
+    this.enemies = this.physics.add.group();
+    this.enemies.add(this.inimigo);
+    this.physics.add.collider(
+      this.nave,
+      this.enemies,
       this.onCollision,
       null,
       this,
@@ -138,15 +164,15 @@ class scene0 extends Phaser.Scene {
     this.joystick.on("update", () => {
       const angle = Phaser.Math.DegToRad(this.joystick.angle);
       const force = this.joystick.force;
-
+Asteroids
       if (force > this.threshold) {
         this.direction = new Phaser.Math.Vector2(
           Math.cos(angle),
           Math.sin(angle),
         ).normalize();
-      }
 
-      if (this.joystick.force > 0) {
+        // Nave com motor ligado e animação normal
+        this.nave.setTexture("nave");
         const accel = 500; // Aceleração da nave
         this.nave.setAcceleration(
           this.direction.x * accel,
@@ -168,56 +194,119 @@ class scene0 extends Phaser.Scene {
             break;
         }
       } else {
+        // Joystick não acionado: motor desligado
         this.nave.setAcceleration(0, 0);
         this.nave.anims.stop();
+    
       }
     });
 
     this.textTime = this.add
-      .text(16, 16, `Time: ${this.timer}`, {
+      .text(16, 16, `Timer: ${this.timer}`, {
         fontSize: "32px",
         fill: "#fff",
       })
       .setScrollFactor(0);
-    setInterval(() => {
+
+    this.textTime = this.add
+      .text(16, 16, `Timer: ${this.timer}`, {
+        fontSize: "32px",
+        fill: "#fff",
+      })
+      .setScrollFactor(0);
+    this.timerInterval = setInterval(() => {
       this.timer += 1;
       this.textTime.setText(`Time: ${this.timer}`);
+
+      if (this.timer % 10 === 0) {
+        this.spawnEnemy();
+      }
     }, 1000);
   }
 
   update() {
-    // Lógica de perseguição do inimigo
-    const dx = this.nave.x - this.inimigo.x;
-    const dy = this.nave.y - this.inimigo.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance > 10) {
-      // Evitar movimento se muito próximo
-      const direction = new Phaser.Math.Vector2(dx, dy).normalize();
-      this.inimigo.setVelocity(
-        direction.x * this.inimigo.speed,
-        direction.y * this.inimigo.speed,
-      );
-
-      // Determinar a direção e tocar animação
-      const angle = Phaser.Math.RadToDeg(Math.atan2(dy, dx));
-      if (angle >= -135 && angle < -45) {
-        this.inimigo.anims.play("inimigo-walk-up", true);
-      } else if (angle >= -45 && angle < 45) {
-        this.inimigo.anims.play("inimigo-walk-right", true);
-      } else if (angle >= 45 && angle < 135) {
-        this.inimigo.anims.play("inimigo-walk-down", true);
-      } else {
-        this.inimigo.anims.play("inimigo-walk-left", true);
-      }
-    } else {
-      this.inimigo.setVelocity(0, 0);
-      this.inimigo.anims.stop();
+    // Spawna um novo inimigo a cada 10 segundos do timer
+    if (
+      this.timer > 0 &&
+      this.timer % 10 === 0 &&
+      this.lastSpawnSecond !== this.timer
+    ) {
+      this.lastSpawnSecond = this.timer;
+      this.spawnEnemy();
     }
+
+    // Lógica de perseguição de todos inimigos do grupo
+    this.enemies.getChildren().forEach((inimigo) => {
+      const dx = this.nave.x - inimigo.x;
+      const dy = this.nave.y - inimigo.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance > 10) {
+        // Evitar movimento se muito próximo
+        const direction = new Phaser.Math.Vector2(dx, dy).normalize();
+        inimigo.setVelocity(
+          direction.x * inimigo.speed,
+          direction.y * inimigo.speed,
+        );
+
+        // Determinar a direção e tocar animação
+        const angle = Phaser.Math.RadToDeg(Math.atan2(dy, dx));
+        if (angle >= -135 && angle < -45) {
+          inimigo.anims.play("inimigo-walk-up", true);
+        } else if (angle >= -45 && angle < 45) {
+          inimigo.anims.play("inimigo-walk-right", true);
+        } else if (angle >= 45 && angle < 135) {
+          inimigo.anims.play("inimigo-walk-down", true);
+        } else {
+          inimigo.anims.play("inimigo-walk-left", true);
+        }
+      } else {
+        inimigo.setVelocity(0, 0);
+        inimigo.anims.stop();
+      }
+    });
+  }
+
+  spawnEnemy() {
+    const margin = 200;
+    let x = Phaser.Math.Between(
+      0 + margin,
+      this.physics.world.bounds.width - margin,
+    );
+    let y = Phaser.Math.Between(
+      0 + margin,
+      this.physics.world.bounds.height - margin,
+    );
+
+    if (Phaser.Math.Distance.Between(x, y, this.nave.x, this.nave.y) < margin) {
+      x = Phaser.Math.Between(
+        0 + margin,
+        this.physics.world.bounds.width - margin,
+      );
+      y = Phaser.Math.Between(
+        0 + margin,
+        this.physics.world.bounds.height - margin,
+      );
+    }
+
+    const novoInimigo = this.physics.add.sprite(x, y, "policia", 20);
+    novoInimigo.setCollideWorldBounds(true);
+    novoInimigo.speed = 200;
+    novoInimigo.body.setSize(32, 32);
+    novoInimigo.body.setOffset(16, 16);
+    this.enemies.add(novoInimigo);
+    this.physics.add.collider(
+      this.nave,
+      novoInimigo,
+      this.onCollision,
+      null,
+      this,
+    );
   }
 
   onCollision() {
     // Quando colidir, parar o jogo e mostrar Game Over
+    clearInterval(this.timerInterval); // Parar o timer
     this.physics.pause();
     this.nave.anims.stop();
     this.inimigo.anims.stop();
