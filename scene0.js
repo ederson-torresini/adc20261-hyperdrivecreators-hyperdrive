@@ -5,7 +5,7 @@ class scene0 extends Phaser.Scene {
     this.threshold = 0.1;
     this.speed = 400;
     this.direction = undefined;
-    this.money = 0;
+    this.currentAnim = null;
     this.timer = 0;
   }
 
@@ -16,7 +16,6 @@ class scene0 extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 64,
     });
-
 
     this.load.spritesheet("policia", "assets/nave.inimiga.png", {
       frameWidth: 64,
@@ -106,7 +105,7 @@ class scene0 extends Phaser.Scene {
       repeat: -1,
     });
 
-    this.nave = this.physics.add.sprite(400, 225, "nave", 20);
+    this.nave = this.physics.add.sprite(400, 225, "nave", 0);
     this.nave.setCollideWorldBounds(true);
     this.nave.setDrag(300); // Desaceleração natural
     this.nave.setMaxVelocity(400); // Velocidade máxima
@@ -115,7 +114,7 @@ class scene0 extends Phaser.Scene {
     this.cameras.main.startFollow(this.nave, true, 0.1, 0.1);
 
     // Criar nave inimiga
-    this.inimigo = this.physics.add.sprite(800, 300, "policia", 20);
+    this.inimigo = this.physics.add.sprite(800, 300, "policia", 0);
     this.inimigo.setCollideWorldBounds(true);
     this.inimigo.speed = 200; // Velocidade do inimigo
     this.inimigo.body.setSize(32, 32); // Diminuir área de colisão
@@ -127,7 +126,9 @@ class scene0 extends Phaser.Scene {
       const x = Phaser.Math.Between(100, this.worldWidth - 100);
       const y = Phaser.Math.Between(100, this.worldHeight - 100);
       const asteroid = this.asteroides.create(x, y, "asteroid");
-      console.log(x, y)
+      asteroid.body.setSize(48, 48); // Diminuir hitbox dos asteroides
+      asteroid.body.setOffset(24, 24); // Centralizar o body no sprite de 96x96
+      console.log(x, y);
     }
     this.physics.add.collider(this.nave, this.asteroides, () => {
       // Colisão com asteroides: parar a nave
@@ -164,49 +165,42 @@ class scene0 extends Phaser.Scene {
     this.joystick.on("update", () => {
       const angle = Phaser.Math.DegToRad(this.joystick.angle);
       const force = this.joystick.force;
-Asteroids
+
+      // Lógica para movimentação dos asteroides
       if (force > this.threshold) {
         this.direction = new Phaser.Math.Vector2(
           Math.cos(angle),
           Math.sin(angle),
         ).normalize();
 
-        // Nave com motor ligado e animação normal
-        this.nave.setTexture("nave");
         const accel = 500; // Aceleração da nave
         this.nave.setAcceleration(
           this.direction.x * accel,
           this.direction.y * accel,
         );
 
-        switch (true) {
-          case this.joystick.angle >= -135 && this.joystick.angle < -45:
-            this.nave.anims.play("walk-up", true);
-            break;
-          case this.joystick.angle >= -45 && this.joystick.angle < 45:
-            this.nave.anims.play("walk-right", true);
-            break;
-          case this.joystick.angle >= 45 && this.joystick.angle < 135:
-            this.nave.anims.play("walk-down", true);
-            break;
-          case this.joystick.angle >= 135 || this.joystick.angle < -135:
-            this.nave.anims.play("walk-left", true);
-            break;
+        let desiredAnim = null;
+        if (this.joystick.angle >= -135 && this.joystick.angle < -45) {
+          desiredAnim = "walk-up";
+        } else if (this.joystick.angle >= -45 && this.joystick.angle < 45) {
+          desiredAnim = "walk-right";
+        } else if (this.joystick.angle >= 45 && this.joystick.angle < 135) {
+          desiredAnim = "walk-down";
+        } else {
+          desiredAnim = "walk-left";
+        }
+
+        if (desiredAnim && this.currentAnim !== desiredAnim) {
+          this.currentAnim = desiredAnim;
+          this.nave.anims.play(desiredAnim, true);
         }
       } else {
         // Joystick não acionado: motor desligado
         this.nave.setAcceleration(0, 0);
         this.nave.anims.stop();
-    
+        this.currentAnim = null;
       }
     });
-
-    this.textTime = this.add
-      .text(16, 16, `Timer: ${this.timer}`, {
-        fontSize: "32px",
-        fill: "#fff",
-      })
-      .setScrollFactor(0);
 
     this.textTime = this.add
       .text(16, 16, `Timer: ${this.timer}`, {
@@ -225,16 +219,6 @@ Asteroids
   }
 
   update() {
-    // Spawna um novo inimigo a cada 10 segundos do timer
-    if (
-      this.timer > 0 &&
-      this.timer % 10 === 0 &&
-      this.lastSpawnSecond !== this.timer
-    ) {
-      this.lastSpawnSecond = this.timer;
-      this.spawnEnemy();
-    }
-
     // Lógica de perseguição de todos inimigos do grupo
     this.enemies.getChildren().forEach((inimigo) => {
       const dx = this.nave.x - inimigo.x;
@@ -289,7 +273,7 @@ Asteroids
       );
     }
 
-    const novoInimigo = this.physics.add.sprite(x, y, "policia", 20);
+    const novoInimigo = this.physics.add.sprite(x, y, "policia", 0);
     novoInimigo.setCollideWorldBounds(true);
     novoInimigo.speed = 200;
     novoInimigo.body.setSize(32, 32);
