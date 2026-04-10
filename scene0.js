@@ -29,6 +29,8 @@ class scene0 extends Phaser.Scene {
       "rexvirtualjoystickplugin.min.js",
       true,
     );
+
+    this.load.audio("musica", "assets/musicafundo.mp3");
   }
 
   create() {
@@ -98,6 +100,8 @@ class scene0 extends Phaser.Scene {
       repeat: -1,
     });
 
+    this.music = this.sound.add("musica", { loop: true }).play();
+
     this.anims.create({
       key: "inimigo-walk-down",
       frames: this.anims.generateFrameNumbers("policia", { start: 8, end: 11 }),
@@ -122,7 +126,7 @@ class scene0 extends Phaser.Scene {
 
     // Asteroides
     this.asteroides = this.physics.add.group();
-    for (let i = 0; i < 100; i++) {
+    for (let i = 0; i < 50; i++) {
       const x = Phaser.Math.Between(100, this.worldWidth - 100);
       const y = Phaser.Math.Between(100, this.worldHeight - 100);
       const asteroid = this.asteroides.create(x, y, "asteroid");
@@ -135,6 +139,20 @@ class scene0 extends Phaser.Scene {
       this.nave.setVelocity(0, 0);
     });
 
+    this.enemies = this.physics.add.group();
+
+    this.physics.add.collider(
+      this.enemies,
+      this.asteroides,
+      (inimigo, asteroide) => {
+        // Colisão com asteroides: destruir a nave policial e gerar outra
+        if (inimigo && inimigo.active) {
+          this.enemies.remove(inimigo, true, true);
+          this.spawnEnemy();
+        }
+      },
+    );
+
     // Adicionar colisão entre nave e inimigo
     this.physics.add.collider(
       this.nave,
@@ -144,7 +162,6 @@ class scene0 extends Phaser.Scene {
       this,
     );
 
-    this.enemies = this.physics.add.group();
     this.enemies.add(this.inimigo);
     this.physics.add.collider(
       this.nave,
