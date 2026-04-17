@@ -23,6 +23,10 @@ class scene0 extends Phaser.Scene {
     });
 
     this.load.image("asteroid", "assets/Asteroid.png");
+    this.load.spritesheet("explosao", "assets/explosão.png", {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
 
     this.load.plugin(
       "rexvirtualjoystickplugin",
@@ -100,6 +104,13 @@ class scene0 extends Phaser.Scene {
       repeat: -1,
     });
 
+    this.anims.create({
+      key: "explosao",
+      frames: this.anims.generateFrameNumbers("explosao", { start: 0, end: 4 }),
+      frameRate: 12,
+      repeat: 0,
+    });
+
     this.music = this.sound.add("musica", { loop: true }).play();
 
     this.anims.create({
@@ -132,8 +143,13 @@ class scene0 extends Phaser.Scene {
       const asteroid = this.asteroides.create(x, y, "asteroid");
       asteroid.body.setSize(48, 48); // Diminuir hitbox dos asteroides
       asteroid.body.setOffset(24, 24); // Centralizar o body no sprite de 96x96
+      asteroid.setCollideWorldBounds(true);
+      asteroid.setBounce(1);
       console.log(x, y);
     }
+
+    this.physics.add.collider(this.asteroides, this.asteroides);
+
     this.physics.add.collider(this.nave, this.asteroides, () => {
       // Colisão com asteroides: parar a nave
       this.nave.setVelocity(0, 0);
@@ -145,21 +161,20 @@ class scene0 extends Phaser.Scene {
       this.enemies,
       this.asteroides,
       (inimigo, asteroide) => {
-        // Colisão com asteroides: destruir a nave policial e gerar outra
+        // Colisão com asteroides: mostrar explosão, destruir a nave policial e gerar outra
         if (inimigo && inimigo.active) {
+          const explosion = this.add
+            .sprite(inimigo.x, inimigo.y, "explosao", 0)
+            .setDepth(1);
+          explosion.play("explosao");
+          explosion.on("animationcomplete", () => {
+            explosion.destroy();
+          });
+
           this.enemies.remove(inimigo, true, true);
           this.spawnEnemy();
         }
       },
-    );
-
-    // Adicionar colisão entre nave e inimigo
-    this.physics.add.collider(
-      this.nave,
-      this.inimigo,
-      this.onCollision,
-      null,
-      this,
     );
 
     this.enemies.add(this.inimigo);
@@ -305,12 +320,19 @@ class scene0 extends Phaser.Scene {
     );
   }
 
-  onCollision() {
+  onCollision(player, enemy) {
     // Quando colidir, parar o jogo e mostrar Game Over
     clearInterval(this.timerInterval); // Parar o timer
     this.physics.pause();
     this.nave.anims.stop();
-    this.inimigo.anims.stop();
+    if (enemy && enemy.anims) {
+      enemy.anims.stop();
+    }
+    this.enemies.getChildren().forEach((inimigo) => {
+      if (inimigo && inimigo.anims) {
+        inimigo.anims.stop();
+      }
+    });
 
     // Adicionar texto de Game Over
     this.add
