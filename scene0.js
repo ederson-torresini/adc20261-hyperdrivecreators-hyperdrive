@@ -7,6 +7,8 @@ class scene0 extends Phaser.Scene {
     this.direction = undefined;
     this.currentAnim = null;
     this.timer = 0;
+    this.turboActive = false;
+    this.turboTimer = null;
   }
 
   preload() {
@@ -23,10 +25,13 @@ class scene0 extends Phaser.Scene {
     });
 
     this.load.image("asteroid", "assets/Asteroid.png");
+
     this.load.spritesheet("explosao", "assets/explosão.png", {
       frameWidth: 64,
       frameHeight: 64,
     });
+
+    this.load.image("turbo", "assets/turbo.png");
 
     this.load.plugin(
       "rexvirtualjoystickplugin",
@@ -188,7 +193,7 @@ class scene0 extends Phaser.Scene {
 
     this.joystick = this.plugins.get("rexvirtualjoystickplugin").add(this, {
       x: 100,
-      y: 350,
+      y: 420,
       radius: 50,
       base: this.add.circle(0, 0, 50, 0xcccccc),
       thumb: this.add.circle(0, 0, 25, 0x666666),
@@ -205,7 +210,8 @@ class scene0 extends Phaser.Scene {
           Math.sin(angle),
         ).normalize();
 
-        const accel = 500; // Aceleração da nave
+        const accel = this.turboActive ? 900 : 500; // Aceleração da nave
+        this.nave.setMaxVelocity(this.turboActive ? 650 : 400);
         this.nave.setAcceleration(
           this.direction.x * accel,
           this.direction.y * accel,
@@ -232,6 +238,38 @@ class scene0 extends Phaser.Scene {
         this.nave.anims.stop();
         this.currentAnim = null;
       }
+    });
+
+    this.turboButton = this.add
+      .image(
+        this.cameras.main.width - 40,
+        this.cameras.main.height - 40,
+        "turbo",
+      )
+      .setOrigin(1, 1)
+      .setScale(2)
+      .setScrollFactor(0)
+      .setInteractive({ useHandCursor: true })
+      .setAlpha(0.95);
+
+    this.turboButton.on("pointerdown", () => {
+      this.turboActive = true;
+      this.turboButton.setTint(0xffd700);
+
+      if (this.turboTimer) {
+        this.turboTimer.remove();
+      }
+
+      this.turboTimer = this.time.delayedCall(
+        2000,
+        () => {
+          this.turboActive = false;
+          this.turboButton.clearTint();
+          this.turboTimer = null;
+        },
+        null,
+        this,
+      );
     });
 
     this.textTime = this.add
