@@ -319,6 +319,19 @@ class scene0 extends Phaser.Scene {
         inimigo.anims.stop();
       }
     });
+
+     try {
+      this.game.socket.emit("scene0", this.game.room, {
+        player: {
+          x: this.player.body.velocity.x,
+          y: this.player.body.velocity.y,
+          key: this.player.anims.currentAnim.key,
+          frame: this.player.anims.currentFrame.index,
+        },
+      });
+    } catch (e) {
+      console.error("Error updating nave:", e);
+    }
   }
 
   spawnEnemy() {
