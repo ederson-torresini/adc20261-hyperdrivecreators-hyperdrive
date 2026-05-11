@@ -286,6 +286,35 @@ class scene0 extends Phaser.Scene {
         this.spawnEnemy();
       }
     }, 1000);
+
+    this.remotePlayers = [];
+
+    this.game.socket.on("scene0", (state) => {
+      if (state.nave) {
+        try {
+          if (state.nave.id === this.game.socket.id) return;
+
+          let remotePlayer = this.remotePlayers.find(
+            (p) => p.id === state.nave.id,
+          );
+
+          if (!remotePlayer) {
+            remotePlayer = this.add
+              .sprite(state.nave.x, state.nave.y, "nave", 0)
+            this.remotePlayers.push({
+              id: state.nave.id,
+              sprite: remotePlayer,
+            });
+          }
+
+          remotePlayer.sprite.setPosition(state.nave.x, state.nave.y);
+          remotePlayer.sprite.setTexture("nave", state.nave.frame || 0);
+        } catch (e) {
+          console.log(this.remotePlayers);
+          console.error("Error updating remote player:", e);
+        }
+      }
+    });
   }
 
   update() {
@@ -320,17 +349,21 @@ class scene0 extends Phaser.Scene {
       }
     });
 
-     try {
+    try {
       this.game.socket.emit("scene0", this.game.room, {
-        player: {
-          x: this.player.body.velocity.x,
-          y: this.player.body.velocity.y,
-          key: this.player.anims.currentAnim.key,
-          frame: this.player.anims.currentFrame.index,
+        nave: {
+          id: this.game.socket.id,
+          x: this.nave.x,
+          y: this.nave.y,
+          texture: "nave",
+          animation: this.nave.anims.currentAnim
+            ? this.nave.anims.currentAnim.key
+            : "walk-up",
+          frame: this.nave.anims.currentFrame.index,
         },
       });
     } catch (e) {
-      console.error("Error updating nave:", e);
+      console.error("Error updating player:", e);
     }
   }
 
