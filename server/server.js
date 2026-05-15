@@ -24,6 +24,11 @@ io.on("connection", (socket) => {
     socket.to(room).emit("scene0", { ...state });
   });
 
+  socket.on("select-player", (room, player) => {
+    console.log(`Player selected in room ${room}:`, player);
+    socket.to(room).emit("player-selected", player);
+  });
+
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });

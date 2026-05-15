@@ -11,37 +11,6 @@ class scene0 extends Phaser.Scene {
     this.turboTimer = null;
   }
 
-  preload() {
-    this.load.image("mapa", "assets/mapahyperdrive.png");
-
-    this.load.spritesheet("nave", "assets/nave.png", {
-      frameWidth: 64,
-      frameHeight: 64,
-    });
-
-    this.load.spritesheet("policia", "assets/nave.inimiga.png", {
-      frameWidth: 64,
-      frameHeight: 64,
-    });
-
-    this.load.image("asteroid", "assets/Asteroid.png");
-
-    this.load.spritesheet("explosao", "assets/explosão.png", {
-      frameWidth: 64,
-      frameHeight: 64,
-    });
-
-    this.load.image("turbo", "assets/turbo.png");
-
-    this.load.plugin(
-      "rexvirtualjoystickplugin",
-      "rexvirtualjoystickplugin.min.js",
-      true,
-    );
-
-    this.load.audio("musica", "assets/musicafundo.mp3");
-  }
-
   create() {
     this.timer = 0; // Zerar o timer no início da cena
 
@@ -56,33 +25,73 @@ class scene0 extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, this.worldWidth, this.worldHeight);
     this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight);
 
+
+
+
+
+
     this.anims.create({
       key: "walk-up",
-      frames: this.anims.generateFrameNumbers("nave", { start: 0, end: 3 }),
+      frames: this.anims.generateFrameNumbers("navejogador1", { start: 0, end: 3 }),
       frameRate: 10,
       repeat: -1,
     });
 
     this.anims.create({
       key: "walk-left",
-      frames: this.anims.generateFrameNumbers("nave", { start: 4, end: 7 }),
+      frames: this.anims.generateFrameNumbers("navejogador1", { start: 4, end: 7 }),
       frameRate: 10,
       repeat: -1,
     });
 
     this.anims.create({
       key: "walk-right",
-      frames: this.anims.generateFrameNumbers("nave", { start: 12, end: 15 }),
+      frames: this.anims.generateFrameNumbers("navejogador1", { start: 12, end: 15 }),
       frameRate: 10,
       repeat: -1,
     });
 
     this.anims.create({
       key: "walk-down",
-      frames: this.anims.generateFrameNumbers("nave", { start: 8, end: 11 }),
+      frames: this.anims.generateFrameNumbers("navejogador1", { start: 8, end: 11 }),
       frameRate: 10,
       repeat: -1,
     });
+
+
+
+
+    this.anims.create({
+      key: "walk-up",
+      frames: this.anims.generateFrameNumbers("navejogador2", { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "walk-left",
+      frames: this.anims.generateFrameNumbers("navejogador2", { start: 4, end: 7 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "walk-right",
+      frames: this.anims.generateFrameNumbers("navejogador2", { start: 12, end: 15 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: "walk-down",
+      frames: this.anims.generateFrameNumbers("navejogador2", { start: 8, end: 11 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+
+
+
 
     // Animações para o inimigo (policia)
     this.anims.create({

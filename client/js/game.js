@@ -1,15 +1,21 @@
 import config from "./config.js";
 import scene0 from "./scene0.js";
 import TelaInicial from "./tela.js";
+import Preloader from "./preloader.js";
+import room from "./room.js";
+import player from "./player.js";
 
 class Game extends Phaser.Game {
   constructor() {
     super(config);
 
+    this.scene.add("Preloader", Preloader);
     this.scene.add("TelaInicial", TelaInicial);
     this.scene.add("scene0", scene0);
+    this.scene.add("room", room);
+    this.scene.add("player", player);
     this.scene.start("TelaInicial"); // Inicia com a tela inicial
-    
+
     if (location.hostname.match(/localhost|127\.0\.0\.1/)) {
       this.socket = io("http://localhost:3000");
     } else if (location.hostname.match(/github\.dev/)) {
