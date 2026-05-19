@@ -20,20 +20,24 @@ class Preloader extends Phaser.Scene {
     this.load.image("start", "starbuton.png");
     this.load.image("room-background", "room-background.png");
     this.load.spritesheet("navejogador1", "navejogador1.png", {
-      frameWidth: 32,
-      frameHeight: 32,
+      frameWidth: 64,
+      frameHeight: 64,
     });
     this.load.spritesheet("navejogador2", "navejogador2.png", {
-      frameWidth: 32,
-      frameHeight: 32,
+      frameWidth: 64,
+      frameHeight: 64,
     });
-    this.load.image("nave-inimiga", "nave.inimiga.png");
+    this.load.spritesheet("policia", "nave.inimiga.png", {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
     this.load.image("bala", "bala.png");
     this.load.image("explosao", "explosão.png");
     this.load.image("turbo", "turbo.png");
     this.load.image("asteroid", "Asteroid.png");
     this.load.image("mapa", "mapahyperdrive.png");
     this.load.audio("musica", "musicafundo.mp3");
+    this.load.plugin("rexvirtualjoystickplugin", "../js/rexvirtualjoystickplugin.min.js", true);
   }
 
   create() {

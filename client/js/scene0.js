@@ -118,14 +118,6 @@ class scene0 extends Phaser.Scene {
       repeat: -1,
     });
 
-    this.anims.create({
-      key: "explosao",
-      frames: this.anims.generateFrameNumbers("explosao", { start: 0, end: 4 }),
-      frameRate: 12,
-      repeat: 0,
-    });
-
-    this.music = this.sound.add("musica", { loop: true }).play();
 
     this.anims.create({
       key: "inimigo-walk-down",
@@ -133,6 +125,15 @@ class scene0 extends Phaser.Scene {
       frameRate: 10,
       repeat: -1,
     });
+
+     this.anims.create({
+      key: "explosao",
+      frames: this.anims.generateFrameNumbers("explosao", { start: 0, end: 4 }),
+      frameRate: 12,
+      repeat: 0,
+    });
+
+    this.music = this.sound.add("musica", { loop: true }).play();
 
     this.nave = this.physics.add.sprite(400, 225, "nave", 0);
     this.nave.setCollideWorldBounds(true);
@@ -324,6 +325,65 @@ class scene0 extends Phaser.Scene {
         }
       }
     });
+
+    this.game.socket.on("scene0", (state) => {
+      if (state.artifacts) {
+        state.artifacts.forEach((artifact) => {
+          let x = artifact.x * this.tilemap.widthInPixels;
+          let y = artifact.y * this.tilemap.heightInPixels;
+          this.artifacts.create(x, y, "projectiles");
+        });
+
+        this.artifacts.getChildren().forEach((artifact) => {
+          artifact;
+          artifact.body.setAllowGravity(false);
+          artifact.anims.play("artifact-projectiles");
+        });
+      }
+
+      if (state.artifactCollected) {
+        let artifact = this.artifacts.getChildren()[state.artifactCollected];
+
+        if (artifact) {
+          artifact.disableBody(true, true);
+        }
+      }
+
+      if (state.player) {
+        try {
+          if (state.player.id === this.game.socket.id) return;
+
+          let remotePlayer = this.remotePlayers.find(
+            (p) => p.id === state.player.id,
+          );
+
+          if (!remotePlayer) {
+            remotePlayer = this.add.sprite(
+              state.player.x,
+              state.player.y,
+              "character",
+              0,
+            );
+
+            this.remotePlayers.push({
+              id: state.player.id,
+              sprite: remotePlayer,
+            });
+          }
+
+          remotePlayer.sprite.setFlipX(state.player.flip.x);
+          remotePlayer.sprite.setFlipY(state.player.flip.y);
+          remotePlayer.sprite.setPosition(state.player.x, state.player.y);
+          if (state.player.animation)
+            remotePlayer.sprite.anims.play(state.player.animation, true);
+          else if (state.player.texture)
+            remotePlayer.sprite.setTexture(state.player.texture);
+        } catch (e) {
+          console.error("Error updating remote player:", e);
+        }
+      }
+    });
+  
   }
 
   update() {
