@@ -25,73 +25,31 @@ class scene0 extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, this.worldWidth, this.worldHeight);
     this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight);
 
+    this.selectedShip = this.game.localPlayer || "navejogador1";
 
+    const ships = ["navejogador1", "navejogador2"];
+    const directions = [
+      { key: "walk-up", start: 0, end: 3 },
+      { key: "walk-left", start: 4, end: 7 },
+      { key: "walk-down", start: 8, end: 11 },
+      { key: "walk-right", start: 12, end: 15 },
+    ];
 
-
-
-
-    this.anims.create({
-      key: "walk-up",
-      frames: this.anims.generateFrameNumbers("navejogador1", { start: 0, end: 3 }),
-      frameRate: 10,
-      repeat: -1,
+    ships.forEach((ship) => {
+      directions.forEach((direction) => {
+        this.anims.create({
+          key: `${ship}-${direction.key}`,
+          frames: this.anims.generateFrameNumbers(ship, {
+            start: direction.start,
+            end: direction.end,
+          }),
+          frameRate: 10,
+          repeat: -1,
+        });
+      });
     });
 
-    this.anims.create({
-      key: "walk-left",
-      frames: this.anims.generateFrameNumbers("navejogador1", { start: 4, end: 7 }),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: "walk-right",
-      frames: this.anims.generateFrameNumbers("navejogador1", { start: 12, end: 15 }),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: "walk-down",
-      frames: this.anims.generateFrameNumbers("navejogador1", { start: 8, end: 11 }),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-
-
-
-    this.anims.create({
-      key: "walk-up",
-      frames: this.anims.generateFrameNumbers("navejogador2", { start: 0, end: 3 }),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: "walk-left",
-      frames: this.anims.generateFrameNumbers("navejogador2", { start: 4, end: 7 }),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: "walk-right",
-      frames: this.anims.generateFrameNumbers("navejogador2", { start: 12, end: 15 }),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: "walk-down",
-      frames: this.anims.generateFrameNumbers("navejogador2", { start: 8, end: 11 }),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-
-
-
+    // Animações para o inimigo (policia)
 
     // Animações para o inimigo (policia)
     this.anims.create({
@@ -118,7 +76,6 @@ class scene0 extends Phaser.Scene {
       repeat: -1,
     });
 
-
     this.anims.create({
       key: "inimigo-walk-down",
       frames: this.anims.generateFrameNumbers("policia", { start: 8, end: 11 }),
@@ -126,7 +83,7 @@ class scene0 extends Phaser.Scene {
       repeat: -1,
     });
 
-     this.anims.create({
+    this.anims.create({
       key: "explosao",
       frames: this.anims.generateFrameNumbers("explosao", { start: 0, end: 4 }),
       frameRate: 12,
@@ -135,7 +92,7 @@ class scene0 extends Phaser.Scene {
 
     this.music = this.sound.add("musica", { loop: true }).play();
 
-    this.nave = this.physics.add.sprite(400, 225, "nave", 0);
+    this.nave = this.physics.add.sprite(400, 225, this.selectedShip, 0);
     this.nave.setCollideWorldBounds(true);
     this.nave.setDrag(300); // Desaceleração natural
     this.nave.setMaxVelocity(400); // Velocidade máxima
@@ -229,13 +186,13 @@ class scene0 extends Phaser.Scene {
 
         let desiredAnim = null;
         if (this.joystick.angle >= -135 && this.joystick.angle < -45) {
-          desiredAnim = "walk-up";
+          desiredAnim = `${this.selectedShip}-walk-up`;
         } else if (this.joystick.angle >= -45 && this.joystick.angle < 45) {
-          desiredAnim = "walk-right";
+          desiredAnim = `${this.selectedShip}-walk-right`;
         } else if (this.joystick.angle >= 45 && this.joystick.angle < 135) {
-          desiredAnim = "walk-down";
+          desiredAnim = `${this.selectedShip}-walk-down`;
         } else {
-          desiredAnim = "walk-left";
+          desiredAnim = `${this.selectedShip}-walk-left`;
         }
 
         if (desiredAnim && this.currentAnim !== desiredAnim) {
@@ -308,17 +265,28 @@ class scene0 extends Phaser.Scene {
             (p) => p.id === state.nave.id,
           );
 
+          const texture = state.nave.texture || "navejogador1";
+          const animation = state.nave.animation || `${texture}-walk-up`;
+
           if (!remotePlayer) {
-            remotePlayer = this.add
-              .sprite(state.nave.x, state.nave.y, "nave", 0)
+            remotePlayer = this.add.sprite(
+              state.nave.x,
+              state.nave.y,
+              texture,
+              state.nave.frame || 0,
+            );
             this.remotePlayers.push({
               id: state.nave.id,
               sprite: remotePlayer,
             });
           }
 
+          remotePlayer.sprite.setTexture(texture, state.nave.frame || 0);
           remotePlayer.sprite.setPosition(state.nave.x, state.nave.y);
-          remotePlayer.sprite.setTexture("nave", state.nave.frame || 0);
+
+          if (animation) {
+            remotePlayer.sprite.anims.play(animation, true);
+          }
         } catch (e) {
           console.log(this.remotePlayers);
           console.error("Error updating remote player:", e);
@@ -383,7 +351,6 @@ class scene0 extends Phaser.Scene {
         }
       }
     });
-  
   }
 
   update() {
@@ -424,11 +391,13 @@ class scene0 extends Phaser.Scene {
           id: this.game.socket.id,
           x: this.nave.x,
           y: this.nave.y,
-          texture: "nave",
+          texture: this.selectedShip,
           animation: this.nave.anims.currentAnim
             ? this.nave.anims.currentAnim.key
-            : "walk-up",
-          frame: this.nave.anims.currentFrame.index,
+            : `${this.selectedShip}-walk-up`,
+          frame: this.nave.anims.currentFrame
+            ? this.nave.anims.currentFrame.index
+            : 0,
         },
       });
     } catch (e) {
