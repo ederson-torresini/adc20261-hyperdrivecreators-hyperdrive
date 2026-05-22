@@ -31,8 +31,12 @@ class Preloader extends Phaser.Scene {
       frameWidth: 64,
       frameHeight: 64,
     });
+    this.load.spritesheet("explosao", "explosão.png", {
+      frameWidth: 64,
+      frameHeight: 64,
+    });
+
     this.load.image("bala", "bala.png");
-    this.load.image("explosao", "explosão.png");
     this.load.image("turbo", "turbo.png");
     this.load.image("asteroid", "Asteroid.png");
     this.load.image("mapa", "mapahyperdrive.png");

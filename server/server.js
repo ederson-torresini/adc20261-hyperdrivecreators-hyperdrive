@@ -29,6 +29,21 @@ io.on("connection", (socket) => {
     socket.to(room).emit("player-selected", player);
   });
 
+  socket.on("collision-event", (room, data) => {
+    console.log(`Collision detected in room ${room} by player:`, data.playerId);
+    socket.to(room).emit("collision-event", data);
+  });
+
+  socket.on("restart-event", (room, data) => {
+    console.log(`Restart requested in room ${room} by player:`, data.playerId);
+    socket.to(room).emit("restart-event", data);
+  });
+
+  socket.on("game-over", (room, data) => {
+    console.log(`Game over in room ${room} for player:`, data.playerId);
+    socket.to(room).emit("game-over", data);
+  });
+
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });

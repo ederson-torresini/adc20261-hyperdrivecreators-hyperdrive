@@ -50,8 +50,6 @@ class scene0 extends Phaser.Scene {
     });
 
     // Animações para o inimigo (policia)
-
-    // Animações para o inimigo (policia)
     this.anims.create({
       key: "inimigo-walk-up",
       frames: this.anims.generateFrameNumbers("policia", { start: 0, end: 3 }),
@@ -351,6 +349,23 @@ class scene0 extends Phaser.Scene {
         }
       }
     });
+
+    // Listener para quando o outro jogador sofrer colisão
+    this.game.socket.on("collision-event", (data) => {
+      console.log("Outro jogador colidiu! Game Over para ambos.", data);
+      this.showGameOver();
+    });
+
+    // Listener para quando o outro jogador apertar reiniciar
+    this.game.socket.on("restart-event", (data) => {
+      console.log("Outro jogador apertou reiniciar.", data);
+      this.scene.restart();
+    });
+
+    this.game.socket.on("game-over", (data) => {
+      console.log("Game Over recebido do outro jogador.", data);
+      this.showGameOver();
+    });
   }
 
   update() {
@@ -443,13 +458,28 @@ class scene0 extends Phaser.Scene {
   }
 
   onCollision(player, enemy) {
+    // Quando colidir, emitir evento para o outro jogador também
+    try {
+      this.game.socket.emit("collision-event", this.game.room, {
+        playerId: this.game.socket.id,
+      });
+    } catch (e) {
+      console.error("Erro ao emitir evento de colisão:", e);
+    }
+
+    // Mostrar Game Over localmente
+    this.showGameOver();
+  }
+
+  showGameOver() {
+    this.game.socket.emit("game-over", this.game.room, {
+      playerId: this.game.socket.id,
+    });
+
     // Quando colidir, parar o jogo e mostrar Game Over
     clearInterval(this.timerInterval); // Parar o timer
     this.physics.pause();
     this.nave.anims.stop();
-    if (enemy && enemy.anims) {
-      enemy.anims.stop();
-    }
     this.enemies.getChildren().forEach((inimigo) => {
       if (inimigo && inimigo.anims) {
         inimigo.anims.stop();
@@ -458,26 +488,44 @@ class scene0 extends Phaser.Scene {
 
     // Adicionar texto de Game Over
     this.add
-      .text(400, 200, "Game Over", {
-        fontSize: "48px",
-        fill: "#ff0000",
-        fontFamily: "Arial",
-      })
+      .text(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2 - 50,
+        "Game Over",
+        {
+          fontSize: "48px",
+          fill: "#ff0000",
+          fontFamily: "Arial",
+        },
+      )
       .setOrigin(0.5)
       .setScrollFactor(0);
 
     // Botão para reiniciar
     let restartButton = this.add
-      .text(400, 300, "Reiniciar", {
-        fontSize: "24px",
-        fill: "#00ff00",
-        fontFamily: "Arial",
-      })
+      .text(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2 + 50,
+        "Reiniciar",
+        {
+          fontSize: "24px",
+          fill: "#00ff00",
+          fontFamily: "Arial",
+        },
+      )
       .setOrigin(0.5)
       .setInteractive()
       .setScrollFactor(0);
 
     restartButton.on("pointerdown", () => {
+      // Emitir evento de reinício para sincronizar com o outro jogador
+      try {
+        this.game.socket.emit("restart-event", this.game.room, {
+          playerId: this.game.socket.id,
+        });
+      } catch (e) {
+        console.error("Erro ao emitir evento de reinício:", e);
+      }
       this.scene.restart();
     });
   }
