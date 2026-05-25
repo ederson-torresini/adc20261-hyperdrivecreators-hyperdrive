@@ -15,7 +15,7 @@ class Preloader extends Phaser.Scene {
 
   preload() {
     this.load.setPath("assets/");
-
+    this.load.image("gameover", "telagameover.png");
     this.load.image("tela", "tela.png");
     this.load.image("start", "starbuton.png");
     this.load.image("room-background", "room-background.png");

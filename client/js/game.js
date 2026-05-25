@@ -4,6 +4,7 @@ import TelaInicial from "./tela.js";
 import Preloader from "./preloader.js";
 import room from "./room.js";
 import player from "./player.js";
+import GameOver from "./gameover.js";
 
 class Game extends Phaser.Game {
   constructor() {
@@ -14,6 +15,7 @@ class Game extends Phaser.Game {
     this.scene.add("scene0", scene0);
     this.scene.add("room", room);
     this.scene.add("player", player);
+    this.scene.add("Gameover", GameOver);
     this.scene.start("TelaInicial"); // Inicia com a tela inicial
 
     if (location.hostname.match(/localhost|127\.0\.0\.1/)) {
@@ -28,9 +30,8 @@ class Game extends Phaser.Game {
       console.log("Socket ID:", this.socket.id);
 
       this.socket.on("change-scene", (scene) => {
-        let currentScene = this.scene.scenes.find((s) =>
-          s.scene.isActive(),
-        ).scene.key
+        let currentScene = this.scene.scenes.find((s) => s.scene.isActive())
+          .scene.key;
 
         if (currentScene !== scene) {
           console.log("Changing scene to:", scene);

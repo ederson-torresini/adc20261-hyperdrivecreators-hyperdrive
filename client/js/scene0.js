@@ -9,9 +9,11 @@ class scene0 extends Phaser.Scene {
     this.timer = 0;
     this.turboActive = false;
     this.turboTimer = null;
+    this.gameOver = false;
   }
 
   create() {
+    this.gameOver = false;
     this.timer = 0; // Zerar o timer no início da cena
 
     this.worldWidth = 3200;
@@ -286,7 +288,6 @@ class scene0 extends Phaser.Scene {
             remotePlayer.sprite.anims.play(animation, true);
           }
         } catch (e) {
-          console.log(this.remotePlayers);
           console.error("Error updating remote player:", e);
         }
       }
@@ -356,12 +357,6 @@ class scene0 extends Phaser.Scene {
       this.showGameOver();
     });
 
-    // Listener para quando o outro jogador apertar reiniciar
-    this.game.socket.on("restart-event", (data) => {
-      console.log("Outro jogador apertou reiniciar.", data);
-      this.scene.restart();
-    });
-
     this.game.socket.on("game-over", (data) => {
       console.log("Game Over recebido do outro jogador.", data);
       this.showGameOver();
@@ -369,6 +364,8 @@ class scene0 extends Phaser.Scene {
   }
 
   update() {
+    if (this.gameOver) return; // Evitar atualizações se o jogo já acabou
+
     // Lógica de perseguição de todos inimigos do grupo
     this.enemies.getChildren().forEach((inimigo) => {
       const dx = this.nave.x - inimigo.x;
@@ -472,62 +469,15 @@ class scene0 extends Phaser.Scene {
   }
 
   showGameOver() {
-    this.game.socket.emit("game-over", this.game.room, {
-      playerId: this.game.socket.id,
-    });
+    if (!this.gameOver) {
+      this.gameOver = true;
+      this.game.socket.emit("game-over", this.game.room, {
+        playerId: this.game.socket.id,
+      });
 
-    // Quando colidir, parar o jogo e mostrar Game Over
-    clearInterval(this.timerInterval); // Parar o timer
-    this.physics.pause();
-    this.nave.anims.stop();
-    this.enemies.getChildren().forEach((inimigo) => {
-      if (inimigo && inimigo.anims) {
-        inimigo.anims.stop();
-      }
-    });
-
-    // Adicionar texto de Game Over
-    this.add
-      .text(
-        this.cameras.main.width / 2,
-        this.cameras.main.height / 2 - 50,
-        "Game Over",
-        {
-          fontSize: "48px",
-          fill: "#ff0000",
-          fontFamily: "Arial",
-        },
-      )
-      .setOrigin(0.5)
-      .setScrollFactor(0);
-
-    // Botão para reiniciar
-    let restartButton = this.add
-      .text(
-        this.cameras.main.width / 2,
-        this.cameras.main.height / 2 + 50,
-        "Reiniciar",
-        {
-          fontSize: "24px",
-          fill: "#00ff00",
-          fontFamily: "Arial",
-        },
-      )
-      .setOrigin(0.5)
-      .setInteractive()
-      .setScrollFactor(0);
-
-    restartButton.on("pointerdown", () => {
-      // Emitir evento de reinício para sincronizar com o outro jogador
-      try {
-        this.game.socket.emit("restart-event", this.game.room, {
-          playerId: this.game.socket.id,
-        });
-      } catch (e) {
-        console.error("Erro ao emitir evento de reinício:", e);
-      }
-      this.scene.restart();
-    });
+      this.scene.stop("scene0");
+      this.scene.start("Gameover");
+    }
   }
 }
 

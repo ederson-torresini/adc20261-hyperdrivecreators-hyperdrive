@@ -1,6 +1,6 @@
 class GameOver extends Phaser.Scene {
   constructor() {
-    super({ key: "GameOver" });
+    super({ key: "Gameover" });
   }
 
   init() {
@@ -11,19 +11,19 @@ class GameOver extends Phaser.Scene {
     }
   }
 
-
   create() {
-    this.add.image(400, 250, "tela").setScale(0.9);
-
-    this.add
-      .image(400, 225, "start")
-      .setScale(0.5)
-      .setInteractive()
-      .on("pointerdown", () => {
-        this.scene.stop("TelaInicial");
-        this.scene.start("Preloader");
-      });
+    // Adicionar imagem de game over como fundo cobrindo toda a tela
+    const gameOverImage = this.add.image(
+      this.cameras.main.width / 2,
+      this.cameras.main.height / 2,
+      "gameover",
+    );
+    gameOverImage.setScrollFactor(0);
+    gameOverImage.setDisplaySize(
+      this.cameras.main.width,
+      this.cameras.main.height,
+    );
   }
 }
 
-export default TelaInicial;
+export default GameOver;
