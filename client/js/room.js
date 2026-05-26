@@ -22,9 +22,9 @@ class room extends Phaser.Scene {
     console.log("Joining room:", this.game.room);
     this.game.socket.emit("join-room", this.game.room);
 
-    this.game.socket.on("player-selected", (player) => {
+    this.game.socket.on("game-started", ({player, asteroids}) => {
       console.log(
-        "Player selected in room:",
+        "Jogo iniciado na sala:",
         this.game.room,
         "player:",
         player,
@@ -36,14 +36,7 @@ class room extends Phaser.Scene {
       this.qrcodeContainer.remove();
 
       this.scene.stop("room");
-      let artifacts = [];
-      for (let x = 0; x < 50; x++) {
-        artifacts.push({
-          x: Math.random(),
-          y: Math.random(),
-        });
-      }
-      this.scene.start("scene0", artifacts);
+      this.scene.start("scene0", asteroids);
     });
   }
 }

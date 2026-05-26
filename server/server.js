@@ -24,9 +24,9 @@ io.on("connection", (socket) => {
     socket.to(room).emit("scene0", { ...state });
   });
 
-  socket.on("select-player", (room, player) => {
-    console.log(`Player selected in room ${room}:`, player);
-    socket.to(room).emit("player-selected", player);
+  socket.on("start-game", (room, player, asteroids) => {
+    console.log(`Sala ${room} iniciada com jogador:`, player);
+    if (room) socket.to(room).emit("game-started", { player, asteroids });
   });
 
   socket.on("collision-event", (room, data) => {

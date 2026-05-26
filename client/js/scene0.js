@@ -20,7 +20,7 @@ class scene0 extends Phaser.Scene {
     this.gameOver = false;
   }
 
-  create() {
+  create(asteroids) {
     this.gameOver = false;
     this.timer = 0; // Zerar o timer no início da cena
 
@@ -119,16 +119,15 @@ class scene0 extends Phaser.Scene {
 
     // Asteroides
     this.asteroides = this.physics.add.group();
-    for (let i = 0; i < 50; i++) {
-      const x = Phaser.Math.Between(100, this.worldWidth - 100);
-      const y = Phaser.Math.Between(100, this.worldHeight - 100);
-      const asteroid = this.asteroides.create(x, y, "asteroid");
+    asteroids.forEach(({ x, y }) => {
+      const xInMap = x * this.worldWidth
+      const yInMap = y * this.worldHeight;
+      const asteroid = this.asteroides.create(xInMap, yInMap, "asteroid");
       asteroid.body.setSize(48, 48); // Diminuir hitbox dos asteroides
       asteroid.body.setOffset(24, 24); // Centralizar o body no sprite de 96x96
       asteroid.setCollideWorldBounds(true);
       asteroid.setBounce(1);
-      console.log(x, y);
-    }
+    });
 
     this.physics.add.collider(this.asteroides, this.asteroides);
 
