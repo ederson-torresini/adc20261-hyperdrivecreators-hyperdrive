@@ -8,7 +8,15 @@ class scene0 extends Phaser.Scene {
     this.currentAnim = null;
     this.timer = 0;
     this.turboActive = false;
+    this.shieldActive = false;
+    this.turboReady = true;
+    this.turboCooldownEndsAt = 0;
     this.turboTimer = null;
+    this.shieldTimer = null;
+    this.shieldSprite = null;
+    this.shieldRadius = 80;
+    this.isTurboPlayer = false;
+    this.isShieldPlayer = false;
     this.gameOver = false;
   }
 
@@ -28,6 +36,8 @@ class scene0 extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight);
 
     this.selectedShip = this.game.localPlayer || "navejogador1";
+    this.isTurboPlayer = this.selectedShip === "navejogador2";
+    this.isShieldPlayer = !this.isTurboPlayer;
 
     const ships = ["navejogador1", "navejogador2"];
     const directions = [
@@ -206,12 +216,13 @@ class scene0 extends Phaser.Scene {
         this.currentAnim = null;
       }
     });
-
+    // Botão de poder
+    const powerIcon = this.isTurboPlayer ? "turbo" : "escudo";
     this.turboButton = this.add
       .image(
         this.cameras.main.width - 40,
         this.cameras.main.height - 40,
-        "turbo",
+        powerIcon,
       )
       .setOrigin(1, 1)
       .setScale(2)
@@ -219,25 +230,24 @@ class scene0 extends Phaser.Scene {
       .setInteractive({ useHandCursor: true })
       .setAlpha(0.95);
 
-    this.turboButton.on("pointerdown", () => {
-      this.turboActive = true;
-      this.turboButton.setTint(0xffd700);
+    this.turboButton.on("pointerdown", this.handlePowerButton, this);
 
-      if (this.turboTimer) {
-        this.turboTimer.remove();
-      }
-
-      this.turboTimer = this.time.delayedCall(
-        2000,
-        () => {
-          this.turboActive = false;
-          this.turboButton.clearTint();
-          this.turboTimer = null;
+    this.turboCooldownText = this.add
+      .text(
+        this.cameras.main.width - 40,
+        this.cameras.main.height - 110,
+        "PRONTO",
+        {
+          fontSize: "18px",
+          fill: "#ffffff",
+          stroke: "#000000",
+          strokeThickness: 3,
         },
-        null,
-        this,
-      );
-    });
+      )
+      .setOrigin(0.5)
+      .setScrollFactor(0);
+
+    this.updateTurboButtonState();
 
     this.textTime = this.add
       .text(16, 16, `Timer: ${this.timer}`, {
@@ -281,10 +291,13 @@ class scene0 extends Phaser.Scene {
             });
           }
 
-          remotePlayer.sprite.setTexture(texture, state.nave.frame || 0);
+          if (remotePlayer.sprite.texture.key !== texture) {
+            remotePlayer.sprite.setTexture(texture);
+          }
+
           remotePlayer.sprite.setPosition(state.nave.x, state.nave.y);
 
-          if (animation) {
+          if (remotePlayer.sprite.anims.currentAnim?.key !== animation) {
             remotePlayer.sprite.anims.play(animation, true);
           }
         } catch (e) {
@@ -366,6 +379,27 @@ class scene0 extends Phaser.Scene {
   update() {
     if (this.gameOver) return; // Evitar atualizações se o jogo já acabou
 
+    this.updateTurboButtonState();
+
+    if (this.shieldSprite) {
+      this.shieldSprite.setPosition(this.nave.x, this.nave.y);
+    }
+
+    if (this.shieldActive) {
+      this.enemies.getChildren().forEach((inimigo) => {
+        const distance = Phaser.Math.Distance.Between(
+          inimigo.x,
+          inimigo.y,
+          this.nave.x,
+          this.nave.y,
+        );
+
+        if (distance <= this.shieldRadius) {
+          this.destroyEnemy(inimigo);
+        }
+      });
+    }
+
     // Lógica de perseguição de todos inimigos do grupo
     this.enemies.getChildren().forEach((inimigo) => {
       const dx = this.nave.x - inimigo.x;
@@ -417,6 +451,138 @@ class scene0 extends Phaser.Scene {
     }
   }
 
+  handlePowerButton() {
+    if (!this.turboReady || this.turboActive || this.shieldActive) {
+      return;
+    }
+
+    if (this.isTurboPlayer) {
+      this.activateTurbo();
+      return;
+    }
+
+    if (this.isShieldPlayer) {
+      this.activateShield();
+    }
+  }
+
+  activateTurbo() {
+    this.turboActive = true;
+    this.turboReady = false;
+    this.turboCooldownEndsAt = this.time.now + 12000;
+
+    if (this.turboTimer) {
+      this.turboTimer.remove();
+    }
+
+    this.turboTimer = this.time.delayedCall(
+      2000,
+      () => {
+        this.turboActive = false;
+        this.updateTurboButtonState();
+        this.turboTimer = null;
+      },
+      null,
+      this,
+    );
+
+    this.updateTurboButtonState();
+  }
+
+  activateShield() {
+    this.shieldActive = true;
+    this.turboReady = false;
+    this.turboCooldownEndsAt = this.time.now + 12000;
+
+    this.ensureShieldSprite();
+    this.shieldSprite.setVisible(true);
+    this.shieldSprite.setAlpha(0.9);
+
+    if (this.shieldTimer) {
+      this.shieldTimer.remove();
+    }
+
+    this.shieldTimer = this.time.delayedCall(
+      4000,
+      () => {
+        this.shieldActive = false;
+        this.shieldSprite.setVisible(false);
+        this.updateTurboButtonState();
+        this.shieldTimer = null;
+      },
+      null,
+      this,
+    );
+
+    this.updateTurboButtonState();
+  }
+
+  ensureShieldSprite() {
+    if (this.shieldSprite) {
+      return;
+    }
+
+    this.shieldSprite = this.add
+      .image(this.nave.x, this.nave.y, "barreira")
+      .setDepth(5)
+      .setScale(0.25)
+      .setAlpha(0.9);
+  }
+
+  destroyEnemy(inimigo) {
+    if (!inimigo || !inimigo.active) {
+      return;
+    }
+
+    const explosion = this.add
+      .sprite(inimigo.x, inimigo.y, "explosao", 0)
+      .setDepth(1);
+    explosion.play("explosao");
+    explosion.on("animationcomplete", () => {
+      explosion.destroy();
+    });
+
+    this.enemies.remove(inimigo, true, true);
+    this.spawnEnemy();
+  }
+
+  updateTurboButtonState() {
+    if (this.turboActive) {
+      this.turboButton.setTint(0xffd700);
+      this.turboButton.setAlpha(1);
+      this.turboCooldownText.setText("ATIVO");
+      return;
+    }
+
+    if (this.shieldActive) {
+      this.turboButton.setTint(0x87cefa);
+      this.turboButton.setAlpha(1);
+      this.turboCooldownText.setText("ATIVO");
+      return;
+    }
+
+    if (!this.turboReady && this.turboCooldownEndsAt > this.time.now) {
+      const remainingSeconds = Math.max(
+        1,
+        Math.ceil((this.turboCooldownEndsAt - this.time.now) / 1000),
+      );
+
+      this.turboButton.setTint(0x8c8c8c);
+      this.turboButton.setAlpha(0.45);
+      this.turboCooldownText.setText(`CD ${remainingSeconds}s`);
+      return;
+    }
+
+    if (!this.turboReady) {
+      this.turboReady = true;
+      this.turboCooldownEndsAt = 0;
+    }
+
+    this.turboButton.setTint(0x7cff7c);
+    this.turboButton.setAlpha(1);
+    this.turboCooldownText.setText("PRONTO");
+  }
+
   spawnEnemy() {
     const margin = 200;
     let x = Phaser.Math.Between(
@@ -455,6 +621,10 @@ class scene0 extends Phaser.Scene {
   }
 
   onCollision(player, enemy) {
+    if (this.shieldActive && player === this.nave) {
+      return;
+    }
+
     // Quando colidir, emitir evento para o outro jogador também
     try {
       this.game.socket.emit("collision-event", this.game.room, {
@@ -471,12 +641,20 @@ class scene0 extends Phaser.Scene {
   showGameOver() {
     if (!this.gameOver) {
       this.gameOver = true;
+
+      if (this.timerInterval) {
+        clearInterval(this.timerInterval);
+        this.timerInterval = null;
+      }
+
       this.game.socket.emit("game-over", this.game.room, {
         playerId: this.game.socket.id,
       });
 
       this.scene.stop("scene0");
-      this.scene.start("Gameover");
+      this.scene.start("Gameover", {
+        elapsedTime: this.timer,
+      });
     }
   }
 }

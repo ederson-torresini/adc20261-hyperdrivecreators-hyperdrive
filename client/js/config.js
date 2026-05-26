@@ -6,6 +6,12 @@ var config = {
     target: 15,
     foreceSetTimeOut: true,
   },
+
+  input: {
+    gamepad: true,
+    activePointers: 3,
+  },
+
   parent: "game-container",
   physics: {
     default: "arcade",
@@ -18,6 +24,6 @@ var config = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
+  
 };
-
 export default config;
