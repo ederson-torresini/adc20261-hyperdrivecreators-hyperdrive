@@ -5,6 +5,8 @@ class TelaInicial extends Phaser.Scene {
 
   init() {
     let room = new URLSearchParams(window.location.search).get("room");
+    this.game.isHost = !room;
+
     if (room) {
       this.game.room = room;
       this.game.socket.emit("join-room", this.game.room);

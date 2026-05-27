@@ -53,6 +53,11 @@ class player extends Phaser.Scene {
         this.startGame("navejogador2");
       });
     this.navejogador2.play("navejogador2");
+
+    this.game.socket.once("game-started", ({ player, asteroids }) => {
+      this.scene.stop("player");
+      this.scene.start("scene0", asteroids);
+    });
   }
 
   startGame(player) {

@@ -39,6 +39,11 @@ io.on("connection", (socket) => {
     socket.to(room).emit("game-over", data);
   });
 
+  socket.on("restart-game", (room) => {
+    console.log(`Restart requested in room ${room} by player:`, socket.id);
+    socket.to(room).emit("restart-game");
+  });
+
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });

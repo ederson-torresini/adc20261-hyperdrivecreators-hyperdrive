@@ -46,6 +46,68 @@ class GameOver extends Phaser.Scene {
       )
       .setOrigin(0.5)
       .setScrollFactor(0);
+
+    if (this.game.isHost) {
+      const restartButton = this.add
+        .text(
+          this.cameras.main.width / 2,
+          this.cameras.main.height / 2 + 150,
+          "Reiniciar jogo",
+          {
+            fontSize: "28px",
+            fill: "#00ff00",
+            stroke: "#000000",
+            strokeThickness: 5,
+            backgroundColor: "#222222",
+            padding: { x: 20, y: 10 },
+          },
+        )
+        .setOrigin(0.5)
+        .setScrollFactor(0)
+        .setInteractive({ useHandCursor: true })
+        .on("pointerdown", () => this.restartGame());
+
+      restartButton.on("pointerover", () =>
+        restartButton.setStyle({ fill: "#ffff00" }),
+      );
+      restartButton.on("pointerout", () =>
+        restartButton.setStyle({ fill: "#00ff00" }),
+      );
+    } else {
+      this.add
+        .text(
+          this.cameras.main.width / 2,
+          this.cameras.main.height / 2 + 150,
+          "Aguardando jogador 1 reiniciar...",
+          {
+            fontSize: "24px",
+            fill: "#ffffff",
+            stroke: "#000000",
+            strokeThickness: 4,
+          },
+        )
+        .setOrigin(0.5)
+        .setScrollFactor(0);
+    }
+
+    this.game.socket.once("game-started", ({ player, asteroids }) => {
+      if (player === "navejogador1") this.game.localPlayer = "navejogador2";
+      else this.game.localPlayer = "navejogador1";
+
+      this.scene.stop("Gameover");
+      this.scene.start("scene0", asteroids);
+    });
+
+    this.game.socket.on("restart-game", () => {
+      this.scene.stop("Gameover");
+      this.scene.start("player");
+    });
+  }
+
+  restartGame() {
+    this.game.socket.emit("restart-game", this.game.room);
+    this.scene.stop("Gameover");
+    this.scene.start("player");
   }
 }
 

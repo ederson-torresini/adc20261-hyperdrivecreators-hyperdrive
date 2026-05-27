@@ -120,7 +120,7 @@ class scene0 extends Phaser.Scene {
     // Asteroides
     this.asteroides = this.physics.add.group();
     asteroids.forEach(({ x, y }) => {
-      const xInMap = x * this.worldWidth
+      const xInMap = x * this.worldWidth;
       const yInMap = y * this.worldHeight;
       const asteroid = this.asteroides.create(xInMap, yInMap, "asteroid");
       asteroid.body.setSize(48, 48); // Diminuir hitbox dos asteroides
@@ -644,6 +644,17 @@ class scene0 extends Phaser.Scene {
       if (this.timerInterval) {
         clearInterval(this.timerInterval);
         this.timerInterval = null;
+      }
+
+      // Cancelar timers de turbo e shield
+      if (this.turboTimer) {
+        this.turboTimer.remove();
+        this.turboTimer = null;
+      }
+
+      if (this.shieldTimer) {
+        this.shieldTimer.remove();
+        this.shieldTimer = null;
       }
 
       this.game.socket.emit("game-over", this.game.room, {

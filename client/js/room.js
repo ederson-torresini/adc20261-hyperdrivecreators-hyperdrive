@@ -5,6 +5,7 @@ class room extends Phaser.Scene {
   }
 
   create() {
+    this.game.isHost = true;
     this.add.image(400, 250, "room-background");
     this.game.room = (Math.random() * 10000).toString().split(".")[0];
     this.add.text(50, 50, this.game.room, {
@@ -22,13 +23,8 @@ class room extends Phaser.Scene {
     console.log("Joining room:", this.game.room);
     this.game.socket.emit("join-room", this.game.room);
 
-    this.game.socket.on("game-started", ({player, asteroids}) => {
-      console.log(
-        "Jogo iniciado na sala:",
-        this.game.room,
-        "player:",
-        player,
-      );
+    this.game.socket.on("game-started", ({ player, asteroids }) => {
+      console.log("Jogo iniciado na sala:", this.game.room, "player:", player);
 
       if (player === "navejogador1") this.game.localPlayer = "navejogador2";
       else this.game.localPlayer = "navejogador1";
