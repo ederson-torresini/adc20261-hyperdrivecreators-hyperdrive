@@ -41,7 +41,11 @@ class Preloader extends Phaser.Scene {
     this.load.image("asteroid", "Asteroid.png");
     this.load.image("mapa", "mapahyperdrive.png");
     this.load.audio("musica", "musicafundo.mp3");
-    this.load.plugin("rexvirtualjoystickplugin", "../js/rexvirtualjoystickplugin.min.js", true);
+    this.load.plugin(
+      "rexvirtualjoystickplugin",
+      "../js/rexvirtualjoystickplugin.min.js",
+      true,
+    );
   }
 
   create() {
