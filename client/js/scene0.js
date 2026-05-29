@@ -12,6 +12,7 @@ class scene0 extends Phaser.Scene {
     this.turboReady = true;
     this.turboCooldownEndsAt = 0;
     this.turboTimer = null;
+    this.timerEvent = null;
     this.shieldTimer = null;
     this.shieldSprite = null;
     this.shieldRadius = 80;
@@ -24,6 +25,15 @@ class scene0 extends Phaser.Scene {
   create(asteroids) {
     this.gameOver = false;
     this.timer = 0; // Zerar o timer no início da cena
+
+    if (this.timerEvent) {
+      this.timerEvent.remove(false);
+      this.timerEvent = null;
+    }
+
+    this.game.socket.off("scene0");
+    this.game.socket.off("collision-event");
+    this.game.socket.off("game-over");
 
     this.worldWidth = 3200;
     this.worldHeight = 1925;
@@ -265,23 +275,29 @@ class scene0 extends Phaser.Scene {
         fill: "#fff",
       })
       .setScrollFactor(0);
-    this.timerInterval = setInterval(() => {
-      this.timer += 1;
-      this.textTime.setText(`Time: ${this.timer}`);
 
-      if (this.timer % 10 === 0 && this.game.isHost) {
-        let x = Phaser.Math.Between(
-          0 + this.margin,
-          this.physics.world.bounds.width - this.margin,
-        );
-        let y = Phaser.Math.Between(
-          0 + this.margin,
-          this.physics.world.bounds.height - this.margin,
-        );
+    this.timerEvent = this.time.addEvent({
+      delay: 1000,
+      callback: () => {
+        this.timer += 1;
+        this.textTime.setText(`Time: ${this.timer}`);
 
-        if (this.game.isHost) this.spawnEnemy(x, y);
-      }
-    }, 1000);
+        if (this.timer % 10 === 0 && this.game.isHost) {
+          let x = Phaser.Math.Between(
+            0 + this.margin,
+            this.physics.world.bounds.width - this.margin,
+          );
+          let y = Phaser.Math.Between(
+            0 + this.margin,
+            this.physics.world.bounds.height - this.margin,
+          );
+
+          if (this.game.isHost) this.spawnEnemy(x, y);
+        }
+      },
+      callbackScope: this,
+      loop: true,
+    });
 
     this.remotePlayers = [];
 
@@ -327,9 +343,7 @@ class scene0 extends Phaser.Scene {
       if (state.enemy) {
         this.spawnEnemy(state.enemy.x, state.enemy.y);
       }
-    });
 
-    this.game.socket.on("scene0", (state) => {
       if (state.artifacts) {
         state.artifacts.forEach((artifact) => {
           let x = artifact.x * this.tilemap.widthInPixels;
@@ -338,7 +352,6 @@ class scene0 extends Phaser.Scene {
         });
 
         this.artifacts.getChildren().forEach((artifact) => {
-          artifact;
           artifact.body.setAllowGravity(false);
           artifact.anims.play("artifact-projectiles");
         });
@@ -566,7 +579,7 @@ class scene0 extends Phaser.Scene {
     });
 
     this.enemies.remove(inimigo, true, true);
-    
+
     let x = Phaser.Math.Between(
       0 + this.margin,
       this.physics.world.bounds.width - this.margin,
@@ -616,7 +629,7 @@ class scene0 extends Phaser.Scene {
   }
 
   spawnEnemy(x, y) {
-    if (this.gameOver.isHost)
+    if (this.game.isHost)
       this.game.socket.emit("scene0", this.game.room, { enemy: { x, y } });
 
     if (
@@ -670,11 +683,6 @@ class scene0 extends Phaser.Scene {
     if (!this.gameOver) {
       this.gameOver = true;
 
-      if (this.timerInterval) {
-        clearInterval(this.timerInterval);
-        this.timerInterval = null;
-      }
-
       // Cancelar timers de turbo e shield
       if (this.turboTimer) {
         this.turboTimer.remove();
@@ -684,6 +692,11 @@ class scene0 extends Phaser.Scene {
       if (this.shieldTimer) {
         this.shieldTimer.remove();
         this.shieldTimer = null;
+      }
+
+      if (this.timerEvent) {
+        this.timerEvent.remove(false);
+        this.timerEvent = null;
       }
 
       this.game.socket.emit("game-over", this.game.room, {
