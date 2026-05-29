@@ -105,9 +105,9 @@ class GameOver extends Phaser.Scene {
   }
 
   restartGame() {
+    // Envia pedido de reinício apenas — não muda de cena localmente.
+    // O emissor (jogador 1 / host) deve permanecer na tela Game Over.
     this.game.socket.emit("restart-game", this.game.room);
-    this.scene.stop("Gameover");
-    this.scene.start("player");
   }
 }
 

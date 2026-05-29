@@ -39,9 +39,24 @@ io.on("connection", (socket) => {
     socket.to(room).emit("game-over", data);
   });
 
-  socket.on("restart-game", (room) => {
+  socket.on("restart-game", async (room) => {
     console.log(`Restart requested in room ${room} by player:`, socket.id);
-    socket.to(room).emit("restart-game");
+
+    try {
+      // Buscar todos sockets na sala
+      const sockets = await io.in(room).allSockets();
+      // Encontrar um socket diferente do emissor (escolher jogador 2)
+      const targetId = Array.from(sockets).find((id) => id !== socket.id);
+
+      if (targetId) {
+        console.log(`Enviando restart-game apenas para ${targetId}`);
+        io.to(targetId).emit("restart-game");
+      } else {
+        console.log(`Nenhum outro jogador encontrado na sala ${room}`);
+      }
+    } catch (err) {
+      console.error("Erro ao processar restart-game:", err);
+    }
   });
 
   socket.on("disconnect", () => {
