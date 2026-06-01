@@ -5,6 +5,7 @@ class GameOver extends Phaser.Scene {
 
   init(data) {
     this.elapsedTime = data?.elapsedTime ?? 0;
+    this.totalTijolinhos = data?.score ?? 0;
 
     let room = new URLSearchParams(window.location.search).get("room");
     if (room) {
@@ -35,11 +36,26 @@ class GameOver extends Phaser.Scene {
     this.add
       .text(
         this.cameras.main.width / 2,
-        this.cameras.main.height / 2 + 80,
+        this.cameras.main.height / 2 + 60,
         `Tempo jogado: ${formattedTime}`,
         {
           fontSize: "32px",
           fill: "#ffffff",
+          stroke: "#000000",
+          strokeThickness: 4,
+        },
+      )
+      .setOrigin(0.5)
+      .setScrollFactor(0);
+
+    this.add
+      .text(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2 + 110,
+        `Tijolinhos: ${this.totalTijolinhos}`,
+        {
+          fontSize: "30px",
+          fill: "#ffd700",
           stroke: "#000000",
           strokeThickness: 4,
         },

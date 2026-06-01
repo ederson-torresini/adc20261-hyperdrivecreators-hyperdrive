@@ -7,6 +7,7 @@ class scene0 extends Phaser.Scene {
     this.direction = undefined;
     this.currentAnim = null;
     this.timer = 0;
+    this.score = 0;
     this.turboActive = false;
     this.shieldActive = false;
     this.turboReady = true;
@@ -25,6 +26,28 @@ class scene0 extends Phaser.Scene {
   create(asteroids) {
     this.gameOver = false;
     this.timer = 0; // Zerar o timer no início da cena
+    this.score = 0; // Zerar score no início da cena
+
+    // Resetar todos os poderes e timers
+    this.turboActive = false;
+    this.shieldActive = false;
+    this.turboReady = true;
+    this.turboCooldownEndsAt = 0;
+
+    if (this.turboTimer) {
+      this.turboTimer.remove();
+      this.turboTimer = null;
+    }
+
+    if (this.shieldTimer) {
+      this.shieldTimer.remove();
+      this.shieldTimer = null;
+    }
+
+    if (this.shieldSprite) {
+      this.shieldSprite.destroy();
+      this.shieldSprite = null;
+    }
 
     if (this.timerEvent) {
       this.timerEvent.remove(false);
@@ -111,7 +134,14 @@ class scene0 extends Phaser.Scene {
       repeat: 0,
     });
 
-    this.music = this.sound.add("musica", { loop: true }).play();
+    if (this.music) {
+      this.music.stop();
+      this.music.destroy();
+      this.music = null;
+    }
+
+    this.music = this.sound.add("musica", { loop: true });
+    this.music.play();
 
     this.nave = this.physics.add.sprite(400, 225, this.selectedShip, 0);
     this.nave.setCollideWorldBounds(true);
@@ -276,11 +306,25 @@ class scene0 extends Phaser.Scene {
       })
       .setScrollFactor(0);
 
+    this.scoreText = this.add
+      .text(16, 56, `Tijolinhos: ${this.score}`, {
+        fontSize: "28px",
+        fill: "#ffd700",
+      })
+      .setScrollFactor(0);
+
     this.timerEvent = this.time.addEvent({
       delay: 1000,
       callback: () => {
         this.timer += 1;
         this.textTime.setText(`Time: ${this.timer}`);
+
+        if (this.timer % 10 === 0) {
+          this.score += 15;
+          if (this.scoreText) {
+            this.scoreText.setText(`Tijolinhos: ${this.score}`);
+          }
+        }
 
         if (this.timer % 10 === 0 && this.game.isHost) {
           let x = Phaser.Math.Between(
@@ -403,12 +447,12 @@ class scene0 extends Phaser.Scene {
     // Listener para quando o outro jogador sofrer colisão
     this.game.socket.on("collision-event", (data) => {
       console.log("Outro jogador colidiu! Game Over para ambos.", data);
-      this.showGameOver();
+      this.showGameOver(data.score, data.elapsedTime, false);
     });
 
     this.game.socket.on("game-over", (data) => {
       console.log("Game Over recebido do outro jogador.", data);
-      this.showGameOver();
+      this.showGameOver(data.score, data.elapsedTime, false);
     });
   }
 
@@ -670,6 +714,8 @@ class scene0 extends Phaser.Scene {
     try {
       this.game.socket.emit("collision-event", this.game.room, {
         playerId: this.game.socket.id,
+        score: this.score,
+        elapsedTime: this.timer,
       });
     } catch (e) {
       console.error("Erro ao emitir evento de colisão:", e);
@@ -679,9 +725,22 @@ class scene0 extends Phaser.Scene {
     this.showGameOver();
   }
 
-  showGameOver() {
+  showGameOver(
+    finalScore = this.score,
+    elapsedTime = this.timer,
+    emitEvent = true,
+  ) {
     if (!this.gameOver) {
       this.gameOver = true;
+
+      const capturedScore = finalScore;
+      const capturedTime = elapsedTime;
+
+      // Resetar todos os poderes e timers
+      this.turboActive = false;
+      this.shieldActive = false;
+      this.turboReady = true;
+      this.turboCooldownEndsAt = 0;
 
       // Cancelar timers de turbo e shield
       if (this.turboTimer) {
@@ -694,18 +753,34 @@ class scene0 extends Phaser.Scene {
         this.shieldTimer = null;
       }
 
+      if (this.shieldSprite) {
+        this.shieldSprite.destroy();
+        this.shieldSprite = null;
+      }
+
       if (this.timerEvent) {
         this.timerEvent.remove(false);
         this.timerEvent = null;
       }
 
-      this.game.socket.emit("game-over", this.game.room, {
-        playerId: this.game.socket.id,
-      });
+      if (this.music) {
+        this.music.stop();
+        this.music.destroy();
+        this.music = null;
+      }
+
+      if (emitEvent) {
+        this.game.socket.emit("game-over", this.game.room, {
+          playerId: this.game.socket.id,
+          score: capturedScore,
+          elapsedTime: capturedTime,
+        });
+      }
 
       this.scene.stop("scene0");
       this.scene.start("Gameover", {
-        elapsedTime: this.timer,
+        elapsedTime: capturedTime,
+        score: capturedScore,
       });
     }
   }
