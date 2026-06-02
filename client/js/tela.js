@@ -8,7 +8,7 @@ class TelaInicial extends Phaser.Scene {
     this.game.isHost = !room;
 
     if (room) {
-      this.game.room = room;
+      this.game.setRoom(room);
       this.game.socket.emit("join-room", this.game.room);
     }
   }

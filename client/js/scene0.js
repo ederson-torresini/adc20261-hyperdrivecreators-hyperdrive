@@ -23,6 +23,11 @@ class scene0 extends Phaser.Scene {
     this.gameOver = false;
   }
 
+  init() {
+    // Recarregar o total de tijolinhos do localStorage toda vez que a cena é iniciada
+    this.game.totalTijolinhos = this.game.loadRoomScore(this.game.room);
+  }
+
   create(asteroids) {
     this.gameOver = false;
     this.timer = 0; // Zerar o timer no início da cena
@@ -447,12 +452,12 @@ class scene0 extends Phaser.Scene {
     // Listener para quando o outro jogador sofrer colisão
     this.game.socket.on("collision-event", (data) => {
       console.log("Outro jogador colidiu! Game Over para ambos.", data);
-      this.showGameOver(data.score, data.elapsedTime, false);
+      this.showGameOver(this.score, this.timer, false);
     });
 
     this.game.socket.on("game-over", (data) => {
       console.log("Game Over recebido do outro jogador.", data);
-      this.showGameOver(data.score, data.elapsedTime, false);
+      this.showGameOver(this.score, this.timer, false);
     });
   }
 
@@ -777,10 +782,15 @@ class scene0 extends Phaser.Scene {
         });
       }
 
+      this.game.totalTijolinhos =
+        (this.game.totalTijolinhos || 0) + capturedScore;
+      this.game.saveRoomScore();
+
       this.scene.stop("scene0");
       this.scene.start("Gameover", {
         elapsedTime: capturedTime,
         score: capturedScore,
+        totalTijolinhos: this.game.totalTijolinhos,
       });
     }
   }

@@ -10,6 +10,9 @@ class Game extends Phaser.Game {
   constructor() {
     super(config);
 
+    this.room = null;
+    this.totalTijolinhos = 0;
+
     this.scene.add("Preloader", Preloader);
     this.scene.add("TelaInicial", TelaInicial);
     this.scene.add("scene0", scene0);
@@ -40,6 +43,29 @@ class Game extends Phaser.Game {
         }
       });
     });
+  }
+
+  getRoomScoreKey(room) {
+    return `totalTijolinhos_${room}`;
+  }
+
+  loadRoomScore(room) {
+    if (!room) return 0;
+    const savedTotal = parseInt(
+      localStorage.getItem(this.getRoomScoreKey(room)) || "0",
+      10,
+    );
+    return Number.isNaN(savedTotal) ? 0 : savedTotal;
+  }
+
+  saveRoomScore() {
+    if (!this.room) return;
+    localStorage.setItem(this.getRoomScoreKey(this.room), this.totalTijolinhos);
+  }
+
+  setRoom(room) {
+    this.room = room;
+    this.totalTijolinhos = this.loadRoomScore(room);
   }
 }
 

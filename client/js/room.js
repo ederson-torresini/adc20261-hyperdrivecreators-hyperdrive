@@ -14,6 +14,8 @@ class room extends Phaser.Scene {
       fill: "#000000",
     });
 
+    this.game.setRoom(this.game.room);
+
     new QRCode(this.qrcodeContainer, {
       text: location.href + "?room=" + this.game.room,
       width: 450,

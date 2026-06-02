@@ -5,11 +5,13 @@ class GameOver extends Phaser.Scene {
 
   init(data) {
     this.elapsedTime = data?.elapsedTime ?? 0;
-    this.totalTijolinhos = data?.score ?? 0;
+    this.currentScore = data?.score ?? 0;
+    this.totalTijolinhos =
+      data?.totalTijolinhos ?? this.game.totalTijolinhos ?? 0;
 
     let room = new URLSearchParams(window.location.search).get("room");
     if (room) {
-      this.game.room = room;
+      this.game.setRoom(room);
       this.game.socket.emit("join-room", this.game.room);
     }
   }
@@ -51,10 +53,25 @@ class GameOver extends Phaser.Scene {
     this.add
       .text(
         this.cameras.main.width / 2,
-        this.cameras.main.height / 2 + 110,
-        `Tijolinhos: ${this.totalTijolinhos}`,
+        this.cameras.main.height / 2 + 90,
+        `Tijolinhos desta partida: ${this.currentScore}`,
         {
           fontSize: "30px",
+          fill: "#ffd700",
+          stroke: "#000000",
+          strokeThickness: 4,
+        },
+      )
+      .setOrigin(0.5)
+      .setScrollFactor(0);
+
+    this.add
+      .text(
+        this.cameras.main.width / 2,
+        this.cameras.main.height / 2 + 130,
+        `Tijolinhos totais: ${this.totalTijolinhos}`,
+        {
+          fontSize: "28px",
           fill: "#ffd700",
           stroke: "#000000",
           strokeThickness: 4,
@@ -67,7 +84,7 @@ class GameOver extends Phaser.Scene {
       const restartButton = this.add
         .text(
           this.cameras.main.width / 2,
-          this.cameras.main.height / 2 + 150,
+          this.cameras.main.height / 2 + 210,
           "Reiniciar jogo",
           {
             fontSize: "28px",
@@ -93,7 +110,7 @@ class GameOver extends Phaser.Scene {
       this.add
         .text(
           this.cameras.main.width / 2,
-          this.cameras.main.height / 2 + 150,
+          this.cameras.main.height / 2 + 210,
           "Aguardando jogador 1 reiniciar...",
           {
             fontSize: "24px",
